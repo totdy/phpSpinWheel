@@ -85,13 +85,11 @@
 
         require_once 'airtable.class.php';
         
-        $prizes = new airtable("app7ygGlUhQfEIiWP","tblSaA8PdZtjuFv4z","patz43r5amyBkWyMC.6dee36125e16808baac79bdf13a0e69bdc5e57ddedd990929e3769bed7d5c53c");
+        $prizes = new airtable("app7ygGlUhQfEIiWP","tblSaA8PdZtjuFv4z","pat4GXkpuZ22JQ82H.562320e7e75517bd78549e8551bb5dbe434ffa1bff969e51f89d07f8bb80f04d");
 
-        $tmpPrizes = $prizes->getRecords();
+        $tmpPrizes = $prizes->getRecords(["sort"=>[["field"=>"prizeId","direction"=>"asc"]]]);
             
-        $tmpPrizes = $tmpPrizes != false ? json_decode($tmpPrizes) : null ;
-
-        $aPrizes = [0];    
+        $tmpPrizes = $tmpPrizes != false ? json_decode($tmpPrizes) : null ;        
 
         foreach($tmpPrizes->records as $row ){
             $aPrizes[] = array($row->fields->prizeId, $row->fields->name, $row->fields->description);    
@@ -103,25 +101,29 @@
         for ($i = ord('A'); $i <= ord('Z'); $i++) {
             $aPrizes[] = array(0, chr($i), "Prize " . chr($i));
         }
-        */
-
-        unset($aPrizes[0]);
+        */        
         
-        $totalPrizes = count($aPrizes);
-        $prizeWon = rand(0, $totalPrizes - 1);        
+        $totalPrizes = count($aPrizes);        
+        $prizeWonId = rand(0, $totalPrizes - 1);
         
         $email = isset($_GET["email"]) ? htmlspecialchars($_GET["email"], ENT_QUOTES, 'UTF-8') : '';
 
         if (!empty($email) && preg_match("/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/", $email)) {
             
-            $winer = new airtable("app7ygGlUhQfEIiWP","tbldbMtm8IieZqJkV","patz43r5amyBkWyMC.6dee36125e16808baac79bdf13a0e69bdc5e57ddedd990929e3769bed7d5c53c");
+            $winer = new airtable("app7ygGlUhQfEIiWP","tbldbMtm8IieZqJkV","pat4GXkpuZ22JQ82H.562320e7e75517bd78549e8551bb5dbe434ffa1bff969e51f89d07f8bb80f04d");
             
-            $tmp = $winer->createRecord([
-                "email" => $email,
-                "prizeId" => $aPrizes[$prizeWon][0]
-            ]);
-
-        }        
+            $tmpRoll = json_decode($winer->getRecords(["filterByFormula"=>"SEARCH(\"".$email."\",{email})","maxRecords"=>1,"sort"=>[["field"=>"rollDate","direction"=>"desc"]]]));
+            
+            if(empty($tmpRoll->records) || $tmpRoll->records[0]->fields->rollDate != date("Y-m-d")){
+                $tmp = $winer->createRecord([
+                    "email" => $email,
+                    "prizeId" => $aPrizes[$prizeWonId][0]
+                ]);                
+            }else{
+                $tmpPrizeIds = array_column($aPrizes, 0);
+                $prizeWonId = array_search($tmpRoll->records[0]->fields->prizeId, $tmpPrizeIds);                
+            }
+        }
         
         echo "<div class='spinWrapper'><div class='spinStripe'>";
         
@@ -132,15 +134,15 @@
                 echo "<div class='prize' id='".$count."'><div class='prizeTitle'>".$item[1]."</div><div class='prizeDescription'>".$item[2]."</div></div>";
             }
         }
-
-        echo "</div></div><button class='rollBtn' onclick='roll(".(($totalPrizes*3+$prizeWon)*100).");'>click</button>";
+        //100 is a width of prize div
+        echo "</div></div><button class='rollBtn' onclick='roll(".(($totalPrizes*3+$prizeWonId)*100).");'>Spin</button>";
         ?>
         </div>
     </body>
     <script>
         function roll(pos){
             let spinStripe = document.getElementsByClassName("spinStripe")[0];
-            spinStripe.style.transform = "translate3d(calc(0px - "+pos+"px + 50px + 50vw), 0px, 0px)";                       
+            spinStripe.style.transform = "translate3d(calc(0px - "+pos+"px - 50px + 50vw), 0px, 0px)";                       
         }
     </script>
 </html>

@@ -11,9 +11,13 @@ class airtable{
         $this->privateToken = $privateToken;
     }
 
-    public function getRecords(){
+    public function getRecords($aAtributes = []){
         
-        $url = "https://api.airtable.com/v0/".$this->baseId."/".$this->tableId;
+        $url = "https://api.airtable.com/v0/".$this->baseId."/".$this->tableId."/";
+
+        if(!empty($aAtributes)){
+            $url .= "?".http_build_query($aAtributes);            
+        }
 
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_URL, $url);
@@ -37,7 +41,7 @@ class airtable{
 
     public function createRecord($aFields){
         
-        $url = "https://api.airtable.com/v0/".$this->baseId."/".$this->tableId;
+        $url = "https://api.airtable.com/v0/".$this->baseId."/".$this->tableId."/";
 
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_URL, $url);
